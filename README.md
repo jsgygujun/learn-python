@@ -13,7 +13,10 @@ Python 7 天精通学习计划 - 从环境搭建到 FastAPI 全栈开发
 | **Python 3.12+** | 编程语言 |
 | **uv** | 包管理 + 虚拟环境 |
 | **FastAPI** | Web 框架 |
+| **SQLModel** | ORM 框架 |
 | **Pydantic** | 数据验证 |
+| **python-jose** | JWT 认证 |
+| **passlib** | 密码加密 |
 | **Ruff** | 代码检查 + 格式化 |
 | **Pyright** | 类型检查 |
 | **pytest** | 测试框架 |
@@ -39,6 +42,9 @@ uv run pytest
 # 运行单个测试文件
 uv run pytest tests/test_data_tools.py -v
 
+# 运行 Blog API 测试
+uv run pytest tests/test_api/ -v
+
 # 带覆盖率运行
 uv run pytest --cov=src
 ```
@@ -59,7 +65,26 @@ uv run pyright .
 ### 运行主程序
 
 ```bash
+# 运行 Python  mastery 示例
 uv run python main.py
+
+# 运行 My Blog API（开发服务器）
+uv run python -m src.my_blog.main
+uvicorn src.my_blog.main:app --reload
+```
+
+### 运行 My Blog API
+
+```bash
+# 启动开发服务器
+uv run uvicorn src.my_blog.main:app --reload
+
+# 访问 API 文档
+# http://localhost:8000/docs
+# http://localhost:8000/redoc
+
+# 访问根路径
+curl http://localhost:8000
 ```
 
 ## 项目结构
@@ -69,13 +94,42 @@ learn-python/
 ├── pyproject.toml          # 项目配置
 ├── uv.lock                 # 依赖锁定
 ├── .python-version         # Python 版本
+├── .env.example            # 环境变量示例
 ├── src/
-│   └── python_mastery/
-│       ├── __init__.py     # 包标识
-│       └── data_tools.py   # 数据处理工具
+│   ├── python_mastery/
+│   │   ├── __init__.py     # 包标识
+│   │   └── data_tools.py   # 数据处理工具
+│   └── my_blog/            # My Blog API
+│       ├── __init__.py
+│       ├── main.py         # FastAPI 应用入口
+│       ├── config.py       # 应用配置
+│       ├── database.py     # 数据库连接
+│       ├── security.py     # JWT 认证
+│       ├── models/         # 数据库模型
+│       │   ├── user.py
+│       │   ├── post.py
+│       │   └── comment.py
+│       ├── schemas/        # Pydantic Schema
+│       │   ├── user.py
+│       │   ├── post.py
+│       │   └── comment.py
+│       ├── services/       # 业务逻辑层
+│       │   ├── user_service.py
+│       │   ├── post_service.py
+│       │   └── comment_service.py
+│       ├── api/
+│       │   ├── deps.py     # 依赖注入
+│       │   └── v1/
+│       │       ├── auth.py   # 认证路由
+│       │       ├── users.py  # 用户路由
+│       │       └── posts.py  # 文章路由
 ├── tests/
 │   ├── __init__.py
-│   └── test_data_tools.py  # 测试文件
+│   ├── conftest.py         # pytest 配置
+│   ├── test_data_tools.py  # 测试文件
+│   └── test_api/           # Blog API 测试
+│       ├── test_auth.py
+│       └── test_posts.py
 └── docs/
     └── learning-plan/      # 学习计划文档
         ├── Day-01-Python 环境搭建与语法速成.md
@@ -86,6 +140,38 @@ learn-python/
         ├── Day-06-前端基础与全栈开发.md
         └── Day-07-综合项目实战.md
 ```
+
+## My Blog API
+
+基于 FastAPI 的博客系统，包含完整的用户认证、文章管理和评论功能。
+
+### API 端点
+
+| 端点 | 方法 | 描述 | 认证 |
+|------|------|------|------|
+| `/api/v1/auth/register` | POST | 用户注册 | 否 |
+| `/api/v1/auth/login` | POST | 用户登录 | 否 |
+| `/api/v1/users/me` | GET | 获取当前用户信息 | 是 |
+| `/api/v1/posts/` | GET | 获取文章列表 | 否 |
+| `/api/v1/posts/{id}` | GET | 获取单篇文章 | 否 |
+| `/api/v1/posts/` | POST | 创建文章 | 是 |
+| `/api/v1/posts/{id}` | PUT | 更新文章 | 是（仅作者） |
+| `/api/v1/posts/{id}` | DELETE | 删除文章 | 是（仅作者） |
+| `/api/v1/posts/{id}/comments` | GET | 获取评论列表 | 否 |
+| `/api/v1/posts/{id}/comments` | POST | 创建评论 | 是 |
+
+### 环境变量配置
+
+复制 `.env.example` 到 `.env` 并配置：
+
+```bash
+cp .env.example .env
+```
+
+主要配置项：
+- `SECRET_KEY` - JWT 密钥（生产环境必须修改）
+- `ALLOWED_ORIGINS` - CORS 允许的域名（生产环境限制具体域名）
+- `DATABASE_URL` - 数据库连接 URL
 
 ## 学习计划
 
@@ -140,7 +226,7 @@ uv add --dev package-name
 
 ### 创建新模块
 
-在 `src/python_mastery/` 下创建新文件：
+在 `src/python_mastery/` 或 `src/my_blog/` 下创建新文件：
 
 ```python
 """模块描述"""
